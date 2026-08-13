@@ -1,5 +1,10 @@
 # Change Log
 
+## 4.2.74
+
+- Route Ctrl/Cmd+C through the same rich HTML-table copy path as the context-menu Copy command.
+- Include column headers when copying complete columns.
+
 ## 4.2.73
 
 - Copy selections as both TSV text and a SheetJS-generated HTML table so Excel can paste table structure.

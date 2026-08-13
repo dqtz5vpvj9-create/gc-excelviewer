@@ -500,10 +500,23 @@
             return [];
         }
         var rows = [];
+        var wholeColumns = ranges.every(function (range) {
+            return range.topRow === 0 && range.bottomRow === grid.rows.length - 1;
+        });
         var sameRows = ranges.every(function (range) {
             return range.topRow === ranges[0].topRow && range.bottomRow === ranges[0].bottomRow;
         });
         if (sameRows) {
+            if (wholeColumns && grid.columnHeaders && grid.columnHeaders.rows.length) {
+                var headers = [];
+                var headerRow = grid.columnHeaders.rows.length - 1;
+                ranges.forEach(function (range) {
+                    for (var col = range.leftCol; col <= range.rightCol; col++) {
+                        headers.push(grid.columnHeaders.getCellData(headerRow, col, true));
+                    }
+                });
+                rows.push(headers);
+            }
             for (var row = ranges[0].topRow; row <= ranges[0].bottomRow; row++) {
                 var values = [];
                 ranges.forEach(function (range) {
@@ -527,11 +540,23 @@
         return rows;
     }
 
+    function matrixToTsv(matrix) {
+        return matrix.map(function (row) {
+            return row.map(function (value) {
+                var text = value === null || value === undefined ? "" : String(value);
+                return /[\t\r\n"]/.test(text)
+                    ? '"' + text.replace(/"/g, '""') + '"'
+                    : text;
+            }).join("\t");
+        }).join("\r\n");
+    }
+
     function richClipboardPayload(grid) {
-        var text = grid.getClipString();
+        var matrix = selectionMatrix(grid);
+        var text = matrixToTsv(matrix);
         var html = "";
         if (typeof XLSX !== "undefined" && XLSX.utils && XLSX.write) {
-            var sheet = XLSX.utils.aoa_to_sheet(selectionMatrix(grid));
+            var sheet = XLSX.utils.aoa_to_sheet(matrix);
             var workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, sheet, "Selection");
             html = XLSX.write(workbook, { type: "string", bookType: "html" });
@@ -561,6 +586,37 @@
         }
         fallbackClipboardCopy(payload.text);
         return Promise.resolve();
+    }
+
+    function installRichCopyShortcut(grid) {
+        if (grid.hostElement.__selectionStatisticsRichCopy) {
+            return;
+        }
+        grid.hostElement.__selectionStatisticsRichCopy = true;
+        grid.hostElement.addEventListener("keydown", function (event) {
+            var key = String(event.key || "").toLowerCase();
+            var target = event.target;
+            var editingText = Boolean(
+                grid.activeEditor ||
+                target && (
+                    target.tagName === "INPUT" ||
+                    target.tagName === "TEXTAREA" ||
+                    target.isContentEditable
+                )
+            );
+            if (
+                editingText ||
+                key !== "c" ||
+                (!event.ctrlKey && !event.metaKey) ||
+                event.altKey ||
+                event.shiftKey
+            ) {
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            copySelection(grid);
+        }, true);
     }
 
     function clearSelection(grid) {
@@ -826,6 +882,7 @@
             grid.selectionMode = wijmo.grid.SelectionMode.MultiRange;
         }
         installMultiRangeColumnSelection(grid);
+        installRichCopyShortcut(grid);
         ensureStatusBar(elementId);
         installContextMenu(grid);
         var frame = null;
@@ -867,6 +924,7 @@
         calculateGridSelection: calculateGridSelection,
         selectionContains: selectionContains,
         selectionMatrix: selectionMatrix,
+        matrixToTsv: matrixToTsv,
         richClipboardPayload: richClipboardPayload,
         copySelection: copySelection,
         cutSelection: cutSelection,

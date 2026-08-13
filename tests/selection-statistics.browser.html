@@ -20,11 +20,20 @@
             configurable: true,
             value: {
                 write: function (items) {
+                    var count = Number(document.body.getAttribute("data-clipboard-write-count") || 0) + 1;
+                    document.body.setAttribute("data-clipboard-write-count", String(count));
                     document.body.setAttribute("data-clipboard-types", JSON.stringify(items[0].types));
-                    return items[0].getType("text/html").then(function (blob) {
-                        return blob.text();
-                    }).then(function (html) {
+                    return Promise.all([
+                        items[0].getType("text/html").then(function (blob) { return blob.text(); }),
+                        items[0].getType("text/plain").then(function (blob) { return blob.text(); })
+                    ]).then(function (parts) {
+                        var html = parts[0];
+                        var text = parts[1];
                         document.body.setAttribute("data-clipboard-html-table", String(/<table/i.test(html)));
+                        document.body.setAttribute("data-clipboard-has-headers", JSON.stringify({
+                            html: html.indexOf("Value") >= 0 && html.indexOf("Second") >= 0,
+                            text: text.split(/\r?\n/)[0] === "Value\tSecond"
+                        }));
                     });
                 },
                 writeText: function (value) {
@@ -122,6 +131,16 @@
                         ? flex._selHdl.extendedSelection.length
                         : -1
                 }));
+                flex.hostElement.dispatchEvent(new KeyboardEvent("keydown", {
+                    bubbles: true,
+                    key: "c",
+                    code: "KeyC",
+                    ctrlKey: true
+                }));
+                document.body.setAttribute(
+                    "data-ctrl-copy-write-count",
+                    document.body.getAttribute("data-clipboard-write-count") || "0"
+                );
                 var sheetStats = SelectionStatistics.calculateGridSelection(sheet);
                 document.body.setAttribute("data-sheet-selection-statistics", JSON.stringify(sheetStats));
 
