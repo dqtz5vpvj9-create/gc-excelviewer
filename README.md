@@ -8,7 +8,9 @@ Powered by [Wijmo](https://developer.mescius.com/wijmo), this extension provides
 
 The viewer includes an Excel-like status bar that automatically shows the average, non-empty count, numeric count, sample standard deviation (`STDEV.S`), minimum, maximum, and sum for the current selection in both CSV and XLSX views.
 
-In CSV views, clicking a column header selects the complete column. Shift-click selects a continuous range. Sorting remains available from the column filter menu.
+In CSV views, clicking a column header selects the complete column. Shift-click selects a continuous range, while Ctrl/Cmd-click adds or removes non-adjacent columns. Sorting remains available from the column filter menu.
+
+After selecting numeric cells, right-click the selection and choose **Box Plot**. Each selected column is rendered as a separate Tukey box plot.
 
 > **Version 4.2.58 fixes many CSV editing issues that occurred in files containing multiline cells.**
 

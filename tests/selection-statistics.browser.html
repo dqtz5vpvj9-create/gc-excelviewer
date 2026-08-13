@@ -31,10 +31,10 @@
         var flex = new wijmo.grid.FlexGrid("#flex", {
             allowSorting: wijmo.grid.AllowSorting.None,
             itemsSource: [
-                { value: "tct_s" },
-                { value: 164.22 },
-                { value: 165.08 },
-                { value: 154.58 }
+                { value: "tct_s", ignored: "label", second: "cpu_s" },
+                { value: 164.22, ignored: "x", second: 490.78 },
+                { value: 165.08, ignored: "y", second: 447.30 },
+                { value: 154.58, ignored: "z", second: 474.33 }
             ]
         });
         SelectionStatistics.bind(flex, "selectionStatistics");
@@ -44,6 +44,7 @@
         ["tct_s", 164.22, 165.08, 154.58].forEach(function (value, row) {
             sheet.setCellData(row, 0, value);
         });
+        SelectionStatistics.bind(sheet, "missingSheetStatisticsElement");
         sheet.selection = new wijmo.grid.CellRange(0, 0, 3, 0);
         requestAnimationFrame(function () {
             var header = flex.columnHeaders.getCellElement(0, 0);
@@ -69,8 +70,114 @@
                     rightCol: flex.selection.rightCol,
                     firstValue: flex.itemsSource[0].value
                 }));
+                var adjacentHeader = flex.columnHeaders.getCellElement(0, 1);
+                var adjacentHeaderRect = adjacentHeader.getBoundingClientRect();
+                ["mousedown", "mouseup", "click"].forEach(function (type) {
+                    adjacentHeader.dispatchEvent(new MouseEvent(type, {
+                        bubbles: true,
+                        button: 0,
+                        shiftKey: true,
+                        clientX: adjacentHeaderRect.left + adjacentHeaderRect.width / 2,
+                        clientY: adjacentHeaderRect.top + adjacentHeaderRect.height / 2
+                    }));
+                });
+                document.body.setAttribute("data-shift-column-selection", JSON.stringify({
+                    firstColumnSelected: SelectionStatistics.selectionContains(flex, 1, 0),
+                    secondColumnSelected: SelectionStatistics.selectionContains(flex, 1, 1)
+                }));
+                adjacentHeader.dispatchEvent(new MouseEvent("mousedown", {
+                    bubbles: true,
+                    button: 0,
+                    ctrlKey: true,
+                    clientX: adjacentHeaderRect.left + adjacentHeaderRect.width / 2,
+                    clientY: adjacentHeaderRect.top + adjacentHeaderRect.height / 2
+                }));
+                var thirdHeader = flex.columnHeaders.getCellElement(0, 2);
+                var thirdHeaderRect = thirdHeader.getBoundingClientRect();
+                thirdHeader.dispatchEvent(new MouseEvent("mousedown", {
+                    bubbles: true,
+                    button: 0,
+                    ctrlKey: true,
+                    clientX: thirdHeaderRect.left + thirdHeaderRect.width / 2,
+                    clientY: thirdHeaderRect.top + thirdHeaderRect.height / 2
+                }));
+                document.body.setAttribute("data-ctrl-column-selection", JSON.stringify({
+                    series: SelectionStatistics.selectionSeries(flex).map(function (item) {
+                        return item.label;
+                    }),
+                    firstColumnStillSelected: SelectionStatistics.selectionContains(flex, 1, 0),
+                    thirdColumnSelected: SelectionStatistics.selectionContains(flex, 1, 2),
+                    selectionMode: flex.selectionMode,
+                    hasSelectionRanges: Boolean(flex.selectionRanges),
+                    hasSelectedRanges: Boolean(flex.selectedRanges),
+                    extendedSelectionLength: flex._selHdl && flex._selHdl.extendedSelection
+                        ? flex._selHdl.extendedSelection.length
+                        : -1
+                }));
                 var sheetStats = SelectionStatistics.calculateGridSelection(sheet);
                 document.body.setAttribute("data-sheet-selection-statistics", JSON.stringify(sheetStats));
+
+                var sheetCell = sheet.cells.getCellElement(1, 0);
+                var sheetCellRect = sheetCell.getBoundingClientRect();
+                sheetCell.dispatchEvent(new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    button: 2,
+                    clientX: sheetCellRect.left + sheetCellRect.width / 2,
+                    clientY: sheetCellRect.top + sheetCellRect.height / 2
+                }));
+                var nativeMenus = Array.prototype.slice.call(
+                    document.querySelectorAll(".wj-flexsheet-context-menu")
+                );
+                var nativeCellMenu = nativeMenus.find(function (menu) {
+                    return menu.querySelector("[wj-part='insert-rows']");
+                });
+                document.body.setAttribute("data-native-sheet-menu", JSON.stringify({
+                    insertRow: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='insert-rows']")),
+                    deleteRow: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='delete-rows']")),
+                    insertColumn: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='insert-columns']")),
+                    deleteColumn: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='delete-columns']")),
+                    boxPlot: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[data-selection-boxplot]"))
+                }));
+                var nativeBoxPlotItem = nativeCellMenu && nativeCellMenu.querySelector("[data-selection-boxplot]");
+                if (nativeBoxPlotItem) {
+                    nativeBoxPlotItem.click();
+                }
+                document.body.setAttribute("data-native-boxplot-dialog", JSON.stringify({
+                    open: Boolean(document.querySelector(".selection-boxplot-overlay")),
+                    boxes: document.querySelectorAll(".boxplot-box").length
+                }));
+                var nativeDialogClose = document.querySelector(".selection-boxplot-header button");
+                if (nativeDialogClose) {
+                    nativeDialogClose.click();
+                }
+
+                var cell = flex.cells.getCellElement(1, 0);
+                var cellRect = cell.getBoundingClientRect();
+                cell.dispatchEvent(new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    button: 2,
+                    clientX: cellRect.left + cellRect.width / 2,
+                    clientY: cellRect.top + cellRect.height / 2
+                }));
+                var boxPlotButton = document.querySelector(".selection-statistics-context-menu button");
+                document.body.setAttribute(
+                    "data-boxplot-menu",
+                    boxPlotButton ? boxPlotButton.textContent : ""
+                );
+                if (boxPlotButton) {
+                    boxPlotButton.click();
+                }
+                requestAnimationFrame(function () {
+                    var overlay = document.querySelector(".selection-boxplot-overlay");
+                    document.body.setAttribute("data-boxplot-dialog", JSON.stringify({
+                        open: Boolean(overlay),
+                        boxes: document.querySelectorAll(".boxplot-box").length,
+                        medians: document.querySelectorAll(".boxplot-median").length,
+                        details: document.querySelector(".selection-boxplot-details")
+                            ? document.querySelector(".selection-boxplot-details").textContent
+                            : ""
+                    }));
+                });
             });
         });
     </script>
