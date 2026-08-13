@@ -14,6 +14,8 @@ In CSV views, clicking a column header selects the whole column. Shift-click sel
 
 After selecting numeric cells, right-click the selection and choose `箱线图`. Each selected column is rendered as a separate Tukey box plot with inclusive quartiles, 1.5×IQR whiskers, and individual outlier points.
 
+The context-menu Copy command writes both TSV text and a SheetJS-generated HTML table. Excel-compatible applications use the HTML representation to paste a table, while text editors continue to receive plain text.
+
 > **Version 4.2.58 fixes many CSV editing issues that occurred in files containing multiline cells.**
 
 Version 4.2 now supports first-class **custom editors** that implement operations such as save, undo, redo, and hot exit. For XLSX files, this is the default, and clicking the name of an XLSX file in explorer view opens the custom editor directly. For CSV files, this is optional, and executing the `Open With` command on the context menu prompts for the built-in or custom editor to be opened. The `Open Preview` command is still supported for both file types.

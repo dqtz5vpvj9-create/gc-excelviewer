@@ -63,11 +63,19 @@ try {
     ["README.md", "CHANGELOG.md", "LICENSE.txt", ".vscodeignore", "out/styles/vscode.css"].forEach(file => {
         copyFile(file, stage);
     });
+    fs.copyFileSync(
+        path.join(repoRoot, "node_modules", "xlsx", "dist", "xlsx.full.min.js"),
+        path.join(stage, "out", "xlsx.full.min.js")
+    );
 
+    const sheetJs = fs.readFileSync(
+        path.join(repoRoot, "node_modules", "xlsx", "dist", "xlsx.full.min.js"),
+        "utf8"
+    );
     const statistics = fs.readFileSync(path.join(repoRoot, "out", "selection-statistics.js"), "utf8");
     ["out/csv.js", "out/excel.js"].forEach(file => {
         const viewer = fs.readFileSync(path.join(repoRoot, file), "utf8");
-        fs.writeFileSync(path.join(stage, file), statistics + "\n" + viewer);
+        fs.writeFileSync(path.join(stage, file), sheetJs + "\n" + statistics + "\n" + viewer);
     });
     copyFile("out/selection-statistics.js", stage);
 

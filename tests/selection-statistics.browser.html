@@ -13,11 +13,20 @@
     <script src="../out/controls/wijmo.grid.min.js"></script>
     <script src="../out/controls/wijmo.grid.filter.min.js"></script>
     <script src="../out/controls/wijmo.grid.sheet.min.js"></script>
+    <script src="../node_modules/xlsx/dist/xlsx.full.min.js"></script>
     <script src="../out/selection-statistics.js"></script>
     <script>
         Object.defineProperty(navigator, "clipboard", {
             configurable: true,
             value: {
+                write: function (items) {
+                    document.body.setAttribute("data-clipboard-types", JSON.stringify(items[0].types));
+                    return items[0].getType("text/html").then(function (blob) {
+                        return blob.text();
+                    }).then(function (html) {
+                        document.body.setAttribute("data-clipboard-html-table", String(/<table/i.test(html)));
+                    });
+                },
                 writeText: function (value) {
                     document.body.setAttribute("data-clipboard-write", value);
                     return Promise.resolve();

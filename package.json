@@ -2,7 +2,7 @@
     "name": "gc-excelviewer",
     "displayName": "Spreadsheet Viewer (Selection Statistics)",
     "description": "Edit XLSX spreadsheets and CSV files with Excel-like automatic statistics for the current selection.",
-    "version": "4.2.72",
+    "version": "4.2.73",
     "icon": "img/gc-excelviewer.png",
     "publisher": "GrapeCity",
     "license": "SEE LICENSE IN LICENSE.txt",
@@ -396,6 +396,7 @@
     },
     "dependencies": {
         "path-browserify": "^1.0.1",
-        "vscode-uri": "^3.0.2"
+        "vscode-uri": "^3.0.2",
+        "xlsx": "^0.18.5"
     }
 }

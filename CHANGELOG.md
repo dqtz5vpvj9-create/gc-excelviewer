@@ -1,5 +1,10 @@
 # Change Log
 
+## 4.2.73
+
+- Copy selections as both TSV text and a SheetJS-generated HTML table so Excel can paste table structure.
+- Keep plain-text clipboard fallback for environments without multi-format clipboard support.
+
 ## 4.2.72
 
 - Restore Cut, Copy, and Paste commands in both CSV and XLSX context menus.

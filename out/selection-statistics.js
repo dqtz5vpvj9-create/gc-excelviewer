@@ -492,14 +492,74 @@
         return false;
     }
 
-    function copySelection(grid) {
+    function selectionMatrix(grid) {
+        var ranges = selectedRanges(grid).slice().sort(function (left, right) {
+            return left.leftCol - right.leftCol || left.topRow - right.topRow;
+        });
+        if (!ranges.length) {
+            return [];
+        }
+        var rows = [];
+        var sameRows = ranges.every(function (range) {
+            return range.topRow === ranges[0].topRow && range.bottomRow === ranges[0].bottomRow;
+        });
+        if (sameRows) {
+            for (var row = ranges[0].topRow; row <= ranges[0].bottomRow; row++) {
+                var values = [];
+                ranges.forEach(function (range) {
+                    for (var col = range.leftCol; col <= range.rightCol; col++) {
+                        values.push(grid.getCellData(row, col, false));
+                    }
+                });
+                rows.push(values);
+            }
+            return rows;
+        }
+        ranges.forEach(function (range) {
+            for (var row = range.topRow; row <= range.bottomRow; row++) {
+                var values = [];
+                for (var col = range.leftCol; col <= range.rightCol; col++) {
+                    values.push(grid.getCellData(row, col, false));
+                }
+                rows.push(values);
+            }
+        });
+        return rows;
+    }
+
+    function richClipboardPayload(grid) {
         var text = grid.getClipString();
-        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-            return navigator.clipboard.writeText(text).catch(function () {
-                fallbackClipboardCopy(text);
+        var html = "";
+        if (typeof XLSX !== "undefined" && XLSX.utils && XLSX.write) {
+            var sheet = XLSX.utils.aoa_to_sheet(selectionMatrix(grid));
+            var workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, sheet, "Selection");
+            html = XLSX.write(workbook, { type: "string", bookType: "html" });
+        }
+        return { text: text, html: html };
+    }
+
+    function copySelection(grid) {
+        var payload = richClipboardPayload(grid);
+        if (
+            payload.html &&
+            navigator.clipboard &&
+            typeof navigator.clipboard.write === "function" &&
+            typeof ClipboardItem !== "undefined"
+        ) {
+            return navigator.clipboard.write([new ClipboardItem({
+                "text/plain": new Blob([payload.text], { type: "text/plain" }),
+                "text/html": new Blob([payload.html], { type: "text/html" })
+            })]).catch(function () {
+                fallbackClipboardCopy(payload.text);
             });
         }
-        fallbackClipboardCopy(text);
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            return navigator.clipboard.writeText(payload.text).catch(function () {
+                fallbackClipboardCopy(payload.text);
+            });
+        }
+        fallbackClipboardCopy(payload.text);
         return Promise.resolve();
     }
 
@@ -806,6 +866,8 @@
         calculate: calculate,
         calculateGridSelection: calculateGridSelection,
         selectionContains: selectionContains,
+        selectionMatrix: selectionMatrix,
+        richClipboardPayload: richClipboardPayload,
         copySelection: copySelection,
         cutSelection: cutSelection,
         pasteSelection: pasteSelection,
