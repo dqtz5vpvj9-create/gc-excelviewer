@@ -241,10 +241,21 @@ export default class CsvDocumentView extends BaseDocumentView {
         <script src="${this.scriptUri}/controls/wijmo.input.min.js" type="text/javascript"></script>
         <script src="${this.scriptUri}/controls/wijmo.grid.min.js" type="text/javascript"></script>
         <script src="${this.scriptUri}/controls/wijmo.grid.filter.min.js" type="text/javascript"></script>
+        <script src="${this.scriptUri}/selection-statistics.js"></script>
         <script src="${this.scriptUri}/csv.js"></script>
         <body style="padding:0px; overflow:hidden" onload="resizeGrid()" onresize="resizeGrid()">
             <div id="flex"></div>
-            <div id="aboutWjmo" style="box-sizing: border-box;position:fixed;z-index:10000;bottom:0px;left:0px;right:0px;padding:4px 20px;background: rgb(90,227,255);background: linear-gradient(129deg, rgba(90,227,255,1) 0%, rgba(5,77,107,1) 100%);color:#000;text-align:right;">powered by: <a href="https://developer.mescius.com/wijmo/flexgrid-javascript-data-grid?utm_source=VSCode&utm_medium=Wijmo-Extension" target="_blank" style="color:#fff;text-decoration:none;font-weight:600;">Wijmo FlexGrid</a></div>
+            <div id="viewerStatusBar" class="viewer-statusbar">
+                <div id="aboutWjmo">powered by: <a href="https://developer.mescius.com/wijmo/flexgrid-javascript-data-grid?utm_source=VSCode&utm_medium=Wijmo-Extension" target="_blank">Wijmo FlexGrid</a></div>
+                <div id="selectionStatistics" class="selection-statistics" role="status" aria-live="polite" title="计数包含所有非空单元格；其他指标只统计数值单元格">
+                    <span class="numeric-stat">平均值: <span class="stat-value" data-stat-value="average">—</span></span>
+                    <span>计数: <span class="stat-value" data-stat-value="count">0</span></span>
+                    <span class="numeric-stat">数值计数: <span class="stat-value" data-stat-value="numericCount">0</span></span>
+                    <span class="numeric-stat">最小值: <span class="stat-value" data-stat-value="min">—</span></span>
+                    <span class="numeric-stat">最大值: <span class="stat-value" data-stat-value="max">—</span></span>
+                    <span class="numeric-stat">求和: <span class="stat-value" data-stat-value="sum">—</span></span>
+                </div>
+            </div>
         </body>
         <script type="text/javascript">
             wijmo.setLicenseKey("${getLicenseKey()}");
