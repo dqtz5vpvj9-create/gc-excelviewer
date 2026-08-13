@@ -141,7 +141,47 @@
         element.classList.toggle("has-numeric-selection", stats.numericCount > 0);
     }
 
+    function ensureStatusBar(elementId) {
+        var existing = document.getElementById(elementId);
+        if (existing) {
+            return existing;
+        }
+
+        var statusBar = document.getElementById("viewerStatusBar");
+        if (!statusBar) {
+            statusBar = document.createElement("div");
+            statusBar.id = "viewerStatusBar";
+            statusBar.className = "viewer-statusbar";
+
+            var about = document.getElementById("aboutWjmo");
+            if (about) {
+                about.removeAttribute("style");
+                about.parentNode.insertBefore(statusBar, about);
+                statusBar.appendChild(about);
+            } else {
+                document.body.appendChild(statusBar);
+            }
+        }
+
+        var statistics = document.createElement("div");
+        statistics.id = elementId;
+        statistics.className = "selection-statistics";
+        statistics.setAttribute("role", "status");
+        statistics.setAttribute("aria-live", "polite");
+        statistics.title = "计数包含所有非空单元格；其他指标只统计数值单元格";
+        statistics.innerHTML =
+            '<span class="numeric-stat">平均值: <span class="stat-value" data-stat-value="average">—</span></span>' +
+            '<span>计数: <span class="stat-value" data-stat-value="count">0</span></span>' +
+            '<span class="numeric-stat">数值计数: <span class="stat-value" data-stat-value="numericCount">0</span></span>' +
+            '<span class="numeric-stat">最小值: <span class="stat-value" data-stat-value="min">—</span></span>' +
+            '<span class="numeric-stat">最大值: <span class="stat-value" data-stat-value="max">—</span></span>' +
+            '<span class="numeric-stat">求和: <span class="stat-value" data-stat-value="sum">—</span></span>';
+        statusBar.appendChild(statistics);
+        return statistics;
+    }
+
     function bind(grid, elementId) {
+        ensureStatusBar(elementId);
         var frame = null;
         var update = function () {
             if (frame !== null && typeof cancelAnimationFrame === "function") {
@@ -180,6 +220,7 @@
         calculate: calculate,
         calculateGridSelection: calculateGridSelection,
         formatNumber: formatNumber,
+        ensureStatusBar: ensureStatusBar,
         bind: bind
     };
 });

@@ -9,3 +9,4 @@ webpack.config.json
 node_modules
 team-extension.log
 tests/**
+scripts/**

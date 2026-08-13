@@ -377,7 +377,8 @@
         "watch-web": "webpack --watch --config ./webpack.config.js",
         "package-web": "webpack --mode production --devtool hidden-source-map --config ./webpack.config.js",
         "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ./data",
-        "test:selection-statistics": "node tests/selection-statistics.test.js"
+        "test:selection-statistics": "node tests/selection-statistics.test.js",
+        "package:local": "node scripts/build-local-vsix.js"
     },
     "devDependencies": {
         "@types/mocha": "^9.0.0",
