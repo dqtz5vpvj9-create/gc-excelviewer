@@ -13,7 +13,10 @@ function initPage() {
         allowAddNew: options.customEditor,
         stickyHeaders: true,
         keyActionTab: wijmo.grid.KeyAction.Cycle,
-        allowDragging: wijmo.grid.AllowDragging.None
+        allowDragging: wijmo.grid.AllowDragging.None,
+        // Excel-like behavior: clicking a column header selects the column.
+        // Sorting remains available through the FlexGridFilter dropdown.
+        allowSorting: wijmo.grid.AllowSorting.None
     });
 
     var filter = new wijmo.grid.filter.FlexGridFilter(flex);

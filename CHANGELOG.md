@@ -4,6 +4,8 @@
 
 Added Excel-like automatic statistics for the current CSV or XLSX selection: average, non-empty count, numeric count, minimum, maximum, and sum.
 
+Changed CSV column-header clicks from immediate sorting to whole-column selection. Sorting remains available in the column filter menu.
+
 ## 4.2.66 (June 4, 2026)
 Updated README with new content and updated plugin name.
 
