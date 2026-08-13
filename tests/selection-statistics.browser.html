@@ -29,6 +29,7 @@
     <script src="../out/selection-statistics.js"></script>
     <script>
         var flex = new wijmo.grid.FlexGrid("#flex", {
+            allowSorting: wijmo.grid.AllowSorting.None,
             itemsSource: [
                 { value: "tct_s" },
                 { value: 164.22 },
@@ -45,12 +46,29 @@
         });
         sheet.selection = new wijmo.grid.CellRange(0, 0, 3, 0);
         requestAnimationFrame(function () {
+            var header = flex.columnHeaders.getCellElement(0, 0);
+            var rect = header.getBoundingClientRect();
+            ["mousedown", "mouseup", "click"].forEach(function (type) {
+                header.dispatchEvent(new MouseEvent(type, {
+                    bubbles: true,
+                    button: 0,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                }));
+            });
             requestAnimationFrame(function () {
                 var values = {};
                 document.querySelectorAll("[data-stat-value]").forEach(function (item) {
                     values[item.getAttribute("data-stat-value")] = item.textContent;
                 });
                 document.body.setAttribute("data-selection-statistics", JSON.stringify(values));
+                document.body.setAttribute("data-header-selection", JSON.stringify({
+                    topRow: flex.selection.topRow,
+                    bottomRow: flex.selection.bottomRow,
+                    leftCol: flex.selection.leftCol,
+                    rightCol: flex.selection.rightCol,
+                    firstValue: flex.itemsSource[0].value
+                }));
                 var sheetStats = SelectionStatistics.calculateGridSelection(sheet);
                 document.body.setAttribute("data-sheet-selection-statistics", JSON.stringify(sheetStats));
             });
