@@ -77,3 +77,31 @@ test("shows no sample standard deviation for a single numeric cell", () => {
     assert.strictEqual(result.standardDeviation, null);
     assert.strictEqual(stats.formatNumber(result.standardDeviation), "—");
 });
+
+test("computes Tukey box plot whiskers and outliers", () => {
+    assert.deepStrictEqual(stats.boxPlotSummary([1, 2, 3, 4, 100]), {
+        count: 5,
+        min: 1,
+        q1: 2,
+        median: 3,
+        q3: 4,
+        max: 100,
+        lowerWhisker: 1,
+        upperWhisker: 4,
+        outliers: [100]
+    });
+});
+
+test("handles a single-value box plot", () => {
+    assert.deepStrictEqual(stats.boxPlotSummary([7]), {
+        count: 1,
+        min: 7,
+        q1: 7,
+        median: 7,
+        q3: 7,
+        max: 7,
+        lowerWhisker: 7,
+        upperWhisker: 7,
+        outliers: []
+    });
+});

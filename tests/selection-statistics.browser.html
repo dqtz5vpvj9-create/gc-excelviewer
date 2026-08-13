@@ -58,6 +58,34 @@
                 }));
                 var sheetStats = SelectionStatistics.calculateGridSelection(sheet);
                 document.body.setAttribute("data-sheet-selection-statistics", JSON.stringify(sheetStats));
+
+                var cell = flex.cells.getCellElement(1, 0);
+                var cellRect = cell.getBoundingClientRect();
+                cell.dispatchEvent(new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    button: 2,
+                    clientX: cellRect.left + cellRect.width / 2,
+                    clientY: cellRect.top + cellRect.height / 2
+                }));
+                var boxPlotButton = document.querySelector(".selection-statistics-context-menu button");
+                document.body.setAttribute(
+                    "data-boxplot-menu",
+                    boxPlotButton ? boxPlotButton.textContent : ""
+                );
+                if (boxPlotButton) {
+                    boxPlotButton.click();
+                }
+                requestAnimationFrame(function () {
+                    var overlay = document.querySelector(".selection-boxplot-overlay");
+                    document.body.setAttribute("data-boxplot-dialog", JSON.stringify({
+                        open: Boolean(overlay),
+                        boxes: document.querySelectorAll(".boxplot-box").length,
+                        medians: document.querySelectorAll(".boxplot-median").length,
+                        details: document.querySelector(".selection-boxplot-details")
+                            ? document.querySelector(".selection-boxplot-details").textContent
+                            : ""
+                    }));
+                });
             });
         });
     </script>

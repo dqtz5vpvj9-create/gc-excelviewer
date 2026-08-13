@@ -1,5 +1,9 @@
 # Change Log
 
+## 4.2.69 (August 13, 2026)
+
+Added a `箱线图` command to the selection context menu. It draws one Tukey box plot per selected column, including quartiles, median, 1.5×IQR whiskers, and outliers.
+
 ## 4.2.68 (August 13, 2026)
 
 Added the sample standard deviation (equivalent to Excel `STDEV.S`) to the automatic selection statistics.

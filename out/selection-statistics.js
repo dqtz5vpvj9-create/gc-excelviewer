@@ -117,6 +117,91 @@
         return calculate(values);
     }
 
+    function quantile(sortedValues, probability) {
+        if (!sortedValues.length) {
+            return null;
+        }
+        if (sortedValues.length === 1) {
+            return sortedValues[0];
+        }
+        var position = (sortedValues.length - 1) * probability;
+        var lower = Math.floor(position);
+        var fraction = position - lower;
+        var upper = Math.min(lower + 1, sortedValues.length - 1);
+        return sortedValues[lower] + (sortedValues[upper] - sortedValues[lower]) * fraction;
+    }
+
+    function boxPlotSummary(values) {
+        var sorted = values.filter(function (value) {
+            return typeof value === "number" && Number.isFinite(value);
+        }).sort(function (left, right) {
+            return left - right;
+        });
+        if (!sorted.length) {
+            return null;
+        }
+        var q1 = quantile(sorted, 0.25);
+        var median = quantile(sorted, 0.5);
+        var q3 = quantile(sorted, 0.75);
+        var iqr = q3 - q1;
+        var lowerFence = q1 - 1.5 * iqr;
+        var upperFence = q3 + 1.5 * iqr;
+        var inside = sorted.filter(function (value) {
+            return value >= lowerFence && value <= upperFence;
+        });
+        return {
+            count: sorted.length,
+            min: sorted[0],
+            q1: q1,
+            median: median,
+            q3: q3,
+            max: sorted[sorted.length - 1],
+            lowerWhisker: inside.length ? inside[0] : sorted[0],
+            upperWhisker: inside.length ? inside[inside.length - 1] : sorted[sorted.length - 1],
+            outliers: sorted.filter(function (value) {
+                return value < lowerFence || value > upperFence;
+            })
+        };
+    }
+
+    function selectionSeries(grid) {
+        var byColumn = Object.create(null);
+        var visited = Object.create(null);
+        selectedRanges(grid).forEach(function (range) {
+            var top = Math.max(0, Math.min(range.row, range.row2 == null ? range.row : range.row2));
+            var bottom = Math.min(grid.rows.length - 1, Math.max(range.row, range.row2 == null ? range.row : range.row2));
+            var left = Math.max(0, Math.min(range.col, range.col2 == null ? range.col : range.col2));
+            var right = Math.min(grid.columns.length - 1, Math.max(range.col, range.col2 == null ? range.col : range.col2));
+            for (var col = left; col <= right; col++) {
+                var series = byColumn[col] || (byColumn[col] = { values: [], label: "" });
+                for (var row = top; row <= bottom; row++) {
+                    var key = row + ":" + col;
+                    if (visited[key]) {
+                        continue;
+                    }
+                    visited[key] = true;
+                    var value = grid.getCellData(row, col, false);
+                    if (!series.label && typeof value === "string" && value.trim()) {
+                        series.label = value.trim();
+                    }
+                    if (typeof value === "number" && Number.isFinite(value)) {
+                        series.values.push(value);
+                    }
+                }
+            }
+        });
+        return Object.keys(byColumn).map(function (columnIndex) {
+            var series = byColumn[columnIndex];
+            var column = grid.columns[Number(columnIndex)];
+            return {
+                label: series.label || (column && column.header) || ("列 " + (Number(columnIndex) + 1)),
+                summary: boxPlotSummary(series.values)
+            };
+        }).filter(function (series) {
+            return series.summary;
+        });
+    }
+
     var numberFormatter = typeof Intl !== "undefined"
         ? new Intl.NumberFormat(undefined, { maximumFractionDigits: 10 })
         : null;
@@ -126,6 +211,241 @@
             return "—";
         }
         return numberFormatter ? numberFormatter.format(value) : String(value);
+    }
+
+    function svgElement(name, attributes, textValue) {
+        var element = document.createElementNS("http://www.w3.org/2000/svg", name);
+        Object.keys(attributes || {}).forEach(function (key) {
+            element.setAttribute(key, String(attributes[key]));
+        });
+        if (textValue !== undefined) {
+            element.textContent = textValue;
+        }
+        return element;
+    }
+
+    function closeBoxPlot() {
+        var existing = document.querySelector(".selection-boxplot-overlay");
+        if (existing) {
+            existing.remove();
+        }
+    }
+
+    function showBoxPlot(grid) {
+        var series = selectionSeries(grid);
+        if (!series.length) {
+            return false;
+        }
+        closeBoxPlot();
+
+        var overlay = document.createElement("div");
+        overlay.className = "selection-boxplot-overlay";
+        overlay.setAttribute("role", "dialog");
+        overlay.setAttribute("aria-modal", "true");
+        overlay.setAttribute("aria-label", "选区箱线图");
+        var panel = document.createElement("div");
+        panel.className = "selection-boxplot-panel";
+        overlay.appendChild(panel);
+
+        var header = document.createElement("div");
+        header.className = "selection-boxplot-header";
+        var title = document.createElement("h2");
+        title.textContent = "选区箱线图";
+        var close = document.createElement("button");
+        close.type = "button";
+        close.textContent = "关闭";
+        close.addEventListener("click", closeBoxPlot);
+        header.appendChild(title);
+        header.appendChild(close);
+        panel.appendChild(header);
+
+        var width = Math.max(640, Math.min(1000, 180 + series.length * 130));
+        var height = 430;
+        var margin = { top: 25, right: 35, bottom: 80, left: 85 };
+        var plotHeight = height - margin.top - margin.bottom;
+        var plotWidth = width - margin.left - margin.right;
+        var allValues = [];
+        series.forEach(function (item) {
+            var summary = item.summary;
+            allValues.push(summary.min, summary.max);
+        });
+        var valueMin = Math.min.apply(Math, allValues);
+        var valueMax = Math.max.apply(Math, allValues);
+        if (valueMin === valueMax) {
+            var padding = Math.abs(valueMin) * 0.1 || 1;
+            valueMin -= padding;
+            valueMax += padding;
+        } else {
+            var rangePadding = (valueMax - valueMin) * 0.08;
+            valueMin -= rangePadding;
+            valueMax += rangePadding;
+        }
+        var y = function (value) {
+            return margin.top + (valueMax - value) / (valueMax - valueMin) * plotHeight;
+        };
+
+        var svg = svgElement("svg", {
+            class: "selection-boxplot-svg",
+            viewBox: "0 0 " + width + " " + height,
+            role: "img",
+            "aria-label": "所选数值的箱线图"
+        });
+        for (var tick = 0; tick <= 5; tick++) {
+            var value = valueMin + (valueMax - valueMin) * tick / 5;
+            var tickY = y(value);
+            svg.appendChild(svgElement("line", {
+                class: "boxplot-grid-line",
+                x1: margin.left,
+                y1: tickY,
+                x2: width - margin.right,
+                y2: tickY
+            }));
+            svg.appendChild(svgElement("text", {
+                class: "boxplot-axis-label",
+                x: margin.left - 10,
+                y: tickY + 4,
+                "text-anchor": "end"
+            }, formatNumber(value)));
+        }
+
+        var slotWidth = plotWidth / series.length;
+        var boxWidth = Math.min(70, slotWidth * 0.48);
+        series.forEach(function (item, index) {
+            var summary = item.summary;
+            var center = margin.left + slotWidth * (index + 0.5);
+            svg.appendChild(svgElement("line", {
+                class: "boxplot-whisker",
+                x1: center,
+                y1: y(summary.lowerWhisker),
+                x2: center,
+                y2: y(summary.upperWhisker)
+            }));
+            [summary.lowerWhisker, summary.upperWhisker].forEach(function (whisker) {
+                svg.appendChild(svgElement("line", {
+                    class: "boxplot-whisker",
+                    x1: center - boxWidth * 0.35,
+                    y1: y(whisker),
+                    x2: center + boxWidth * 0.35,
+                    y2: y(whisker)
+                }));
+            });
+            svg.appendChild(svgElement("rect", {
+                class: "boxplot-box",
+                x: center - boxWidth / 2,
+                y: y(summary.q3),
+                width: boxWidth,
+                height: Math.max(1, y(summary.q1) - y(summary.q3))
+            }));
+            svg.appendChild(svgElement("line", {
+                class: "boxplot-median",
+                x1: center - boxWidth / 2,
+                y1: y(summary.median),
+                x2: center + boxWidth / 2,
+                y2: y(summary.median)
+            }));
+            summary.outliers.forEach(function (outlier, outlierIndex) {
+                var jitter = ((outlierIndex % 5) - 2) * 3;
+                svg.appendChild(svgElement("circle", {
+                    class: "boxplot-outlier",
+                    cx: center + jitter,
+                    cy: y(outlier),
+                    r: 3.5
+                }));
+            });
+            svg.appendChild(svgElement("text", {
+                class: "boxplot-series-label",
+                x: center,
+                y: height - margin.bottom + 28,
+                "text-anchor": "middle"
+            }, item.label.length > 20 ? item.label.slice(0, 19) + "…" : item.label));
+        });
+        panel.appendChild(svg);
+
+        var details = document.createElement("div");
+        details.className = "selection-boxplot-details";
+        series.forEach(function (item) {
+            var summary = item.summary;
+            var line = document.createElement("div");
+            line.textContent = item.label + " — n=" + summary.count +
+                ", Q1=" + formatNumber(summary.q1) +
+                ", 中位数=" + formatNumber(summary.median) +
+                ", Q3=" + formatNumber(summary.q3) +
+                ", 须线=" + formatNumber(summary.lowerWhisker) + "–" + formatNumber(summary.upperWhisker) +
+                ", 离群点=" + summary.outliers.length;
+            details.appendChild(line);
+        });
+        panel.appendChild(details);
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener("mousedown", function (event) {
+            if (event.target === overlay) {
+                closeBoxPlot();
+            }
+        });
+        var escapeHandler = function (event) {
+            if (event.key === "Escape") {
+                closeBoxPlot();
+                document.removeEventListener("keydown", escapeHandler);
+            }
+        };
+        document.addEventListener("keydown", escapeHandler);
+        close.focus();
+        return true;
+    }
+
+    function installContextMenu(grid) {
+        if (grid.hostElement.__selectionStatisticsContextMenu) {
+            return;
+        }
+        grid.hostElement.__selectionStatisticsContextMenu = true;
+        var closeMenu = function () {
+            var menu = document.querySelector(".selection-statistics-context-menu");
+            if (menu) {
+                menu.remove();
+            }
+        };
+        grid.hostElement.addEventListener("contextmenu", function (event) {
+            var hit = grid.hitTest(event);
+            if (!hit || hit.col < 0) {
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            closeMenu();
+
+            if (hit.row >= 0 && (!grid.selection || !grid.selection.contains(hit.row, hit.col))) {
+                grid.select(hit.row, hit.col);
+            }
+            var menu = document.createElement("div");
+            menu.className = "selection-statistics-context-menu";
+            menu.setAttribute("role", "menu");
+            var button = document.createElement("button");
+            button.type = "button";
+            button.textContent = "箱线图";
+            button.setAttribute("role", "menuitem");
+            button.disabled = selectionSeries(grid).length === 0;
+            button.addEventListener("click", function () {
+                closeMenu();
+                showBoxPlot(grid);
+            });
+            menu.appendChild(button);
+            document.body.appendChild(menu);
+            var left = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - 8);
+            var top = Math.min(event.clientY, window.innerHeight - menu.offsetHeight - 8);
+            menu.style.left = Math.max(4, left) + "px";
+            menu.style.top = Math.max(4, top) + "px";
+            button.focus();
+            setTimeout(function () {
+                document.querySelectorAll(".wj-flexsheet-context-menu").forEach(function (item) {
+                    item.style.display = "none";
+                });
+            }, 0);
+        }, true);
+        document.addEventListener("mousedown", function (event) {
+            if (!event.target.closest || !event.target.closest(".selection-statistics-context-menu")) {
+                closeMenu();
+            }
+        });
     }
 
     function render(stats, element) {
@@ -192,6 +512,7 @@
 
     function bind(grid, elementId) {
         ensureStatusBar(elementId);
+        installContextMenu(grid);
         var frame = null;
         var update = function () {
             if (frame !== null && typeof cancelAnimationFrame === "function") {
@@ -229,6 +550,9 @@
     return {
         calculate: calculate,
         calculateGridSelection: calculateGridSelection,
+        boxPlotSummary: boxPlotSummary,
+        selectionSeries: selectionSeries,
+        showBoxPlot: showBoxPlot,
         formatNumber: formatNumber,
         ensureStatusBar: ensureStatusBar,
         bind: bind
