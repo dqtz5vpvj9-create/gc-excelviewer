@@ -241,6 +241,7 @@ export default class CsvDocumentView extends BaseDocumentView {
         <script src="${this.scriptUri}/controls/wijmo.input.min.js" type="text/javascript"></script>
         <script src="${this.scriptUri}/controls/wijmo.grid.min.js" type="text/javascript"></script>
         <script src="${this.scriptUri}/controls/wijmo.grid.filter.min.js" type="text/javascript"></script>
+        <script src="${this.scriptUri}/xlsx.full.min.js"></script>
         <script src="${this.scriptUri}/selection-statistics.js"></script>
         <script src="${this.scriptUri}/csv.js"></script>
         <body style="padding:0px; overflow:hidden" onload="resizeGrid()" onresize="resizeGrid()">

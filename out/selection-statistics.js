@@ -484,6 +484,212 @@
         return true;
     }
 
+    function fallbackClipboardCopy(text) {
+        if (typeof wijmo !== "undefined" && wijmo.Clipboard && wijmo.Clipboard.copy) {
+            wijmo.Clipboard.copy(text);
+            return true;
+        }
+        return false;
+    }
+
+    function selectionMatrix(grid) {
+        var ranges = selectedRanges(grid).slice().sort(function (left, right) {
+            return left.leftCol - right.leftCol || left.topRow - right.topRow;
+        });
+        if (!ranges.length) {
+            return [];
+        }
+        var rows = [];
+        var wholeColumns = ranges.every(function (range) {
+            return range.topRow === 0 && range.bottomRow === grid.rows.length - 1;
+        });
+        var sameRows = ranges.every(function (range) {
+            return range.topRow === ranges[0].topRow && range.bottomRow === ranges[0].bottomRow;
+        });
+        if (sameRows) {
+            if (wholeColumns && grid.columnHeaders && grid.columnHeaders.rows.length) {
+                var headers = [];
+                var headerRow = grid.columnHeaders.rows.length - 1;
+                ranges.forEach(function (range) {
+                    for (var col = range.leftCol; col <= range.rightCol; col++) {
+                        headers.push(grid.columnHeaders.getCellData(headerRow, col, true));
+                    }
+                });
+                rows.push(headers);
+            }
+            for (var row = ranges[0].topRow; row <= ranges[0].bottomRow; row++) {
+                var values = [];
+                ranges.forEach(function (range) {
+                    for (var col = range.leftCol; col <= range.rightCol; col++) {
+                        values.push(grid.getCellData(row, col, false));
+                    }
+                });
+                rows.push(values);
+            }
+            return rows;
+        }
+        ranges.forEach(function (range) {
+            for (var row = range.topRow; row <= range.bottomRow; row++) {
+                var values = [];
+                for (var col = range.leftCol; col <= range.rightCol; col++) {
+                    values.push(grid.getCellData(row, col, false));
+                }
+                rows.push(values);
+            }
+        });
+        return rows;
+    }
+
+    function matrixToTsv(matrix) {
+        return matrix.map(function (row) {
+            return row.map(function (value) {
+                var text = value === null || value === undefined ? "" : String(value);
+                return /[\t\r\n"]/.test(text)
+                    ? '"' + text.replace(/"/g, '""') + '"'
+                    : text;
+            }).join("\t");
+        }).join("\r\n");
+    }
+
+    function richClipboardPayload(grid) {
+        var matrix = selectionMatrix(grid);
+        var text = matrixToTsv(matrix);
+        var html = "";
+        if (typeof XLSX !== "undefined" && XLSX.utils && XLSX.write) {
+            var sheet = XLSX.utils.aoa_to_sheet(matrix);
+            var workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, sheet, "Selection");
+            html = XLSX.write(workbook, { type: "string", bookType: "html" });
+        }
+        return { text: text, html: html };
+    }
+
+    function copySelection(grid) {
+        var payload = richClipboardPayload(grid);
+        if (
+            payload.html &&
+            navigator.clipboard &&
+            typeof navigator.clipboard.write === "function" &&
+            typeof ClipboardItem !== "undefined"
+        ) {
+            return navigator.clipboard.write([new ClipboardItem({
+                "text/plain": new Blob([payload.text], { type: "text/plain" }),
+                "text/html": new Blob([payload.html], { type: "text/html" })
+            })]).catch(function () {
+                fallbackClipboardCopy(payload.text);
+            });
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            return navigator.clipboard.writeText(payload.text).catch(function () {
+                fallbackClipboardCopy(payload.text);
+            });
+        }
+        fallbackClipboardCopy(payload.text);
+        return Promise.resolve();
+    }
+
+    function installRichCopyShortcut(grid) {
+        if (grid.hostElement.__selectionStatisticsRichCopy) {
+            return;
+        }
+        grid.hostElement.__selectionStatisticsRichCopy = true;
+        grid.hostElement.addEventListener("keydown", function (event) {
+            var key = String(event.key || "").toLowerCase();
+            var target = event.target;
+            var editingText = Boolean(
+                grid.activeEditor ||
+                target && (
+                    target.tagName === "INPUT" ||
+                    target.tagName === "TEXTAREA" ||
+                    target.isContentEditable
+                )
+            );
+            if (
+                editingText ||
+                key !== "c" ||
+                (!event.ctrlKey && !event.metaKey) ||
+                event.altKey ||
+                event.shiftKey
+            ) {
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            copySelection(grid);
+        }, true);
+    }
+
+    function clearSelection(grid) {
+        if (grid.isReadOnly) {
+            return;
+        }
+        var visited = Object.create(null);
+        var clear = function () {
+            selectedRanges(grid).forEach(function (range) {
+                for (var row = Math.max(0, range.topRow); row <= Math.min(grid.rows.length - 1, range.bottomRow); row++) {
+                    for (var col = Math.max(0, range.leftCol); col <= Math.min(grid.columns.length - 1, range.rightCol); col++) {
+                        var key = row + ":" + col;
+                        if (!visited[key]) {
+                            visited[key] = true;
+                            grid.setCellData(row, col, null);
+                        }
+                    }
+                }
+            });
+        };
+        if (typeof grid.deferUpdate === "function") {
+            grid.deferUpdate(clear);
+        } else {
+            clear();
+        }
+    }
+
+    function cutSelection(grid) {
+        if (grid.isReadOnly) {
+            return Promise.resolve();
+        }
+        return copySelection(grid).then(function () {
+            clearSelection(grid);
+        });
+    }
+
+    function pasteSelection(grid) {
+        if (grid.isReadOnly) {
+            return Promise.resolve();
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+            return navigator.clipboard.readText().then(function (text) {
+                grid.setClipString(text);
+            }).catch(function () {
+                if (typeof wijmo !== "undefined" && wijmo.Clipboard && wijmo.Clipboard.paste) {
+                    wijmo.Clipboard.paste(function (text) {
+                        grid.setClipString(text);
+                    });
+                }
+            });
+        }
+        if (typeof wijmo !== "undefined" && wijmo.Clipboard && wijmo.Clipboard.paste) {
+            wijmo.Clipboard.paste(function (text) {
+                grid.setClipString(text);
+            });
+        }
+        return Promise.resolve();
+    }
+
+    function nativeMenuItem(label, action, disabled) {
+        var item = document.createElement("div");
+        item.className = "wj-context-menu-item" + (disabled ? " wj-state-disabled" : "");
+        item.textContent = label;
+        if (!disabled) {
+            item.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                action();
+            });
+        }
+        return item;
+    }
+
     function installContextMenu(grid) {
         if (grid.hostElement.__selectionStatisticsContextMenu) {
             return;
@@ -501,6 +707,20 @@
             if (!menu || menu.querySelector("[data-selection-boxplot]")) {
                 return;
             }
+            var clipboardSeparator = document.createElement("div");
+            clipboardSeparator.className = "wj-state-disabled selection-boxplot-menu-separator";
+            clipboardSeparator.style.width = "100%";
+            clipboardSeparator.style.height = "1px";
+            menu.appendChild(clipboardSeparator);
+            menu.appendChild(nativeMenuItem("Cut", function () {
+                cutSelection(grid);
+            }, grid.isReadOnly));
+            menu.appendChild(nativeMenuItem("Copy", function () {
+                copySelection(grid);
+            }, false));
+            menu.appendChild(nativeMenuItem("Paste", function () {
+                pasteSelection(grid);
+            }, grid.isReadOnly));
             var separator = document.createElement("div");
             separator.className = "wj-state-disabled selection-boxplot-menu-separator";
             separator.style.width = "100%";
@@ -547,6 +767,25 @@
             var menu = document.createElement("div");
             menu.className = "selection-statistics-context-menu";
             menu.setAttribute("role", "menu");
+            [
+                { label: "Cut", action: function () { cutSelection(grid); }, disabled: grid.isReadOnly },
+                { label: "Copy", action: function () { copySelection(grid); }, disabled: false },
+                { label: "Paste", action: function () { pasteSelection(grid); }, disabled: grid.isReadOnly }
+            ].forEach(function (command) {
+                var commandButton = document.createElement("button");
+                commandButton.type = "button";
+                commandButton.textContent = command.label;
+                commandButton.setAttribute("role", "menuitem");
+                commandButton.disabled = command.disabled;
+                commandButton.addEventListener("click", function () {
+                    closeMenu();
+                    command.action();
+                });
+                menu.appendChild(commandButton);
+            });
+            var separator = document.createElement("div");
+            separator.className = "selection-statistics-context-menu-separator";
+            menu.appendChild(separator);
             var button = document.createElement("button");
             button.type = "button";
             button.textContent = "Box Plot";
@@ -643,6 +882,7 @@
             grid.selectionMode = wijmo.grid.SelectionMode.MultiRange;
         }
         installMultiRangeColumnSelection(grid);
+        installRichCopyShortcut(grid);
         ensureStatusBar(elementId);
         installContextMenu(grid);
         var frame = null;
@@ -683,6 +923,12 @@
         calculate: calculate,
         calculateGridSelection: calculateGridSelection,
         selectionContains: selectionContains,
+        selectionMatrix: selectionMatrix,
+        matrixToTsv: matrixToTsv,
+        richClipboardPayload: richClipboardPayload,
+        copySelection: copySelection,
+        cutSelection: cutSelection,
+        pasteSelection: pasteSelection,
         boxPlotSummary: boxPlotSummary,
         selectionSeries: selectionSeries,
         showBoxPlot: showBoxPlot,
