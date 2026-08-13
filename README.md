@@ -10,7 +10,7 @@ Powered by [Wijmo](https://developer.mescius.com/wijmo), this extension provides
 
 The public source repository contains the same placeholder Wijmo key as upstream. To create a local VSIX without a Wijmo evaluation banner, first install the official Marketplace extension and then run `npm run package:local`. The packaging script uses the already-installed official extension as its base and overlays the selection-statistics code; it never prints or commits the embedded release license information.
 
-In CSV views, clicking a column header selects the whole column (Shift-click selects adjacent columns). Sorting remains available from the filter dropdown in the column header.
+In CSV views, clicking a column header selects the whole column. Shift-click selects adjacent columns, while Ctrl/Cmd-click adds or removes non-adjacent columns. Sorting remains available from the filter dropdown in the column header.
 
 After selecting numeric cells, right-click the selection and choose `箱线图`. Each selected column is rendered as a separate Tukey box plot with inclusive quartiles, 1.5×IQR whiskers, and individual outlier points.
 

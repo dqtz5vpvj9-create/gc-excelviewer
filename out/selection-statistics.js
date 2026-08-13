@@ -39,6 +39,97 @@
         });
     }
 
+    function selectionContains(grid, row, col) {
+        return selectedRanges(grid).some(function (range) {
+            if (typeof range.contains === "function") {
+                return range.contains(row, col);
+            }
+            var top = Math.min(range.row, range.row2 == null ? range.row : range.row2);
+            var bottom = Math.max(range.row, range.row2 == null ? range.row : range.row2);
+            var left = Math.min(range.col, range.col2 == null ? range.col : range.col2);
+            var right = Math.max(range.col, range.col2 == null ? range.col : range.col2);
+            return row >= top && row <= bottom && col >= left && col <= right;
+        });
+    }
+
+    function installMultiRangeColumnSelection(grid) {
+        if (grid.hostElement.__selectionStatisticsMultiColumn) {
+            return;
+        }
+        grid.hostElement.__selectionStatisticsMultiColumn = true;
+        grid.hostElement.addEventListener("mousedown", function (event) {
+            if (event.button !== 0) {
+                return;
+            }
+            var hit = grid.hitTest(event);
+            if (
+                !hit ||
+                hit.col < 0 ||
+                typeof wijmo === "undefined" ||
+                !wijmo.grid ||
+                hit.cellType !== wijmo.grid.CellType.ColumnHeader
+            ) {
+                return;
+            }
+            if (!event.ctrlKey && !event.metaKey && !event.shiftKey) {
+                grid.hostElement.__selectionStatisticsColumnAnchor = hit.col;
+                return;
+            }
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            var clickedColumn = hit.col;
+            var lastRow = grid.rows.length - 1;
+            if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
+                var anchor = grid.hostElement.__selectionStatisticsColumnAnchor;
+                if (typeof anchor !== "number") {
+                    anchor = grid.selection && grid.selection.col >= 0
+                        ? grid.selection.col
+                        : clickedColumn;
+                }
+                grid.selectedRanges = [new wijmo.grid.CellRange(
+                    0,
+                    Math.min(anchor, clickedColumn),
+                    lastRow,
+                    Math.max(anchor, clickedColumn)
+                )];
+                grid.focus();
+                return;
+            }
+            var clickedWasSelected = false;
+            var next = [];
+            grid.selectedRanges.forEach(function (range) {
+                var isWholeColumnRange = range.topRow === 0 && range.bottomRow === lastRow;
+                if (!isWholeColumnRange || !range.containsColumn(clickedColumn)) {
+                    next.push(range.clone());
+                    return;
+                }
+                clickedWasSelected = true;
+                if (range.leftCol < clickedColumn) {
+                    next.push(new wijmo.grid.CellRange(
+                        0,
+                        range.leftCol,
+                        lastRow,
+                        clickedColumn - 1
+                    ));
+                }
+                if (range.rightCol > clickedColumn) {
+                    next.push(new wijmo.grid.CellRange(
+                        0,
+                        clickedColumn + 1,
+                        lastRow,
+                        range.rightCol
+                    ));
+                }
+            });
+            if (!clickedWasSelected || !next.length) {
+                next.push(new wijmo.grid.CellRange(0, clickedColumn, lastRow, clickedColumn));
+            }
+            grid.selectedRanges = next;
+            grid.focus();
+        }, true);
+    }
+
     function isNonEmpty(value) {
         return value !== null && value !== undefined && value !== "";
     }
@@ -450,7 +541,7 @@
             event.stopImmediatePropagation();
             closeMenu();
 
-            if (hit.row >= 0 && (!grid.selection || !grid.selection.contains(hit.row, hit.col))) {
+            if (hit.row >= 0 && !selectionContains(grid, hit.row, hit.col)) {
                 grid.select(hit.row, hit.col);
             }
             var menu = document.createElement("div");
@@ -543,6 +634,15 @@
     }
 
     function bind(grid, elementId) {
+        if (
+            typeof wijmo !== "undefined" &&
+            wijmo.grid &&
+            wijmo.grid.SelectionMode &&
+            wijmo.grid.SelectionMode.MultiRange !== undefined
+        ) {
+            grid.selectionMode = wijmo.grid.SelectionMode.MultiRange;
+        }
+        installMultiRangeColumnSelection(grid);
         ensureStatusBar(elementId);
         installContextMenu(grid);
         var frame = null;
@@ -582,6 +682,7 @@
     return {
         calculate: calculate,
         calculateGridSelection: calculateGridSelection,
+        selectionContains: selectionContains,
         boxPlotSummary: boxPlotSummary,
         selectionSeries: selectionSeries,
         showBoxPlot: showBoxPlot,

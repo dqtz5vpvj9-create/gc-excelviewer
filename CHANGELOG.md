@@ -1,5 +1,10 @@
 # Change Log
 
+## 4.2.71
+
+- Support Ctrl/Cmd-click selection of non-adjacent columns while keeping Shift-click ranges.
+- Keep a multi-column selection intact when opening its context menu.
+
 ## 4.2.70
 
 - Preserve the original FlexSheet context-menu commands and append Box Plot to that menu.
