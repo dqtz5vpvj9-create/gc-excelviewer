@@ -1,5 +1,9 @@
 # Change Log
 
+## 4.2.70
+
+- Preserve the original FlexSheet context-menu commands and append Box Plot to that menu.
+
 ## 4.2.69 (August 13, 2026)
 
 Added a `箱线图` command to the selection context menu. It draws one Tukey box plot per selected column, including quartiles, median, 1.5×IQR whiskers, and outliers.

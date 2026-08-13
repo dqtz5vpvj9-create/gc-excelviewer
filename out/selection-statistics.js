@@ -398,6 +398,43 @@
             return;
         }
         grid.hostElement.__selectionStatisticsContextMenu = true;
+        var isFlexSheet = grid.hostElement.classList.contains("wj-flexsheet");
+
+        function installFlexSheetItem() {
+            var menus = Array.prototype.slice.call(
+                document.querySelectorAll(".wj-flexsheet-context-menu")
+            );
+            var menu = menus.find(function (candidate) {
+                return candidate.querySelector("[wj-part='insert-rows']");
+            });
+            if (!menu || menu.querySelector("[data-selection-boxplot]")) {
+                return;
+            }
+            var separator = document.createElement("div");
+            separator.className = "wj-state-disabled selection-boxplot-menu-separator";
+            separator.style.width = "100%";
+            separator.style.height = "1px";
+            var item = document.createElement("div");
+            item.className = "wj-context-menu-item";
+            item.setAttribute("data-selection-boxplot", "true");
+            item.textContent = "箱线图";
+            item.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                showBoxPlot(grid);
+            });
+            menu.appendChild(separator);
+            menu.appendChild(item);
+        }
+
+        if (isFlexSheet) {
+            installFlexSheetItem();
+            grid.hostElement.addEventListener("contextmenu", function () {
+                setTimeout(installFlexSheetItem, 0);
+            });
+            return;
+        }
+
         var closeMenu = function () {
             var menu = document.querySelector(".selection-statistics-context-menu");
             if (menu) {
@@ -435,11 +472,6 @@
             menu.style.left = Math.max(4, left) + "px";
             menu.style.top = Math.max(4, top) + "px";
             button.focus();
-            setTimeout(function () {
-                document.querySelectorAll(".wj-flexsheet-context-menu").forEach(function (item) {
-                    item.style.display = "none";
-                });
-            }, 0);
         }, true);
         document.addEventListener("mousedown", function (event) {
             if (!event.target.closest || !event.target.closest(".selection-statistics-context-menu")) {

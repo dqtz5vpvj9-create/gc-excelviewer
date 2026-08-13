@@ -31,6 +31,7 @@
         ["tct_s", 164.22, 165.08, 154.58].forEach(function (value, row) {
             sheet.setCellData(row, 0, value);
         });
+        SelectionStatistics.bind(sheet, "missingSheetStatisticsElement");
         sheet.selection = new wijmo.grid.CellRange(0, 0, 3, 0);
         requestAnimationFrame(function () {
             var header = flex.columnHeaders.getCellElement(0, 0);
@@ -58,6 +59,40 @@
                 }));
                 var sheetStats = SelectionStatistics.calculateGridSelection(sheet);
                 document.body.setAttribute("data-sheet-selection-statistics", JSON.stringify(sheetStats));
+
+                var sheetCell = sheet.cells.getCellElement(1, 0);
+                var sheetCellRect = sheetCell.getBoundingClientRect();
+                sheetCell.dispatchEvent(new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    button: 2,
+                    clientX: sheetCellRect.left + sheetCellRect.width / 2,
+                    clientY: sheetCellRect.top + sheetCellRect.height / 2
+                }));
+                var nativeMenus = Array.prototype.slice.call(
+                    document.querySelectorAll(".wj-flexsheet-context-menu")
+                );
+                var nativeCellMenu = nativeMenus.find(function (menu) {
+                    return menu.querySelector("[wj-part='insert-rows']");
+                });
+                document.body.setAttribute("data-native-sheet-menu", JSON.stringify({
+                    insertRow: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='insert-rows']")),
+                    deleteRow: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='delete-rows']")),
+                    insertColumn: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='insert-columns']")),
+                    deleteColumn: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='delete-columns']")),
+                    boxPlot: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[data-selection-boxplot]"))
+                }));
+                var nativeBoxPlotItem = nativeCellMenu && nativeCellMenu.querySelector("[data-selection-boxplot]");
+                if (nativeBoxPlotItem) {
+                    nativeBoxPlotItem.click();
+                }
+                document.body.setAttribute("data-native-boxplot-dialog", JSON.stringify({
+                    open: Boolean(document.querySelector(".selection-boxplot-overlay")),
+                    boxes: document.querySelectorAll(".boxplot-box").length
+                }));
+                var nativeDialogClose = document.querySelector(".selection-boxplot-header button");
+                if (nativeDialogClose) {
+                    nativeDialogClose.click();
+                }
 
                 var cell = flex.cells.getCellElement(1, 0);
                 var cellRect = cell.getBoundingClientRect();
