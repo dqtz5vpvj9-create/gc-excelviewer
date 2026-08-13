@@ -6,6 +6,10 @@ Added Excel-like automatic statistics for the current CSV or XLSX selection: ave
 
 Changed CSV column-header clicks from immediate sorting to whole-column selection. Sorting remains available from the column filter menu.
 
+Added a Box Plot command for selected numeric data, including quartiles, median, 1.5×IQR whiskers, and outliers.
+
+Added Ctrl/Cmd-click selection of non-adjacent columns while preserving Shift-click ranges and existing FlexSheet context-menu commands.
+
 ## 4.2.66 (June 4, 2026)
 Updated README with new content and updated plugin name.
 

@@ -149,6 +149,110 @@ div[role=gridcell] {
 .selection-statistics .stat-value {
     font-variant-numeric: tabular-nums;
 }
+.selection-statistics-context-menu {
+    position: fixed;
+    z-index: 20000;
+    min-width: 140px;
+    padding: 4px;
+    color: var(--vscode-menu-foreground, var(--vscode-editor-foreground));
+    background: var(--vscode-menu-background, var(--vscode-editor-background));
+    border: 1px solid var(--vscode-menu-border, var(--vscode-contrastBorder));
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+.selection-statistics-context-menu button {
+    width: 100%;
+    padding: 6px 18px;
+    text-align: left;
+    color: inherit;
+    background: transparent;
+    border: 0;
+}
+.selection-statistics-context-menu button:hover,
+.selection-statistics-context-menu button:focus {
+    color: var(--vscode-menu-selectionForeground, var(--vscode-list-activeSelectionForeground));
+    background: var(--vscode-menu-selectionBackground, var(--vscode-list-activeSelectionBackground));
+    outline: none;
+}
+.selection-statistics-context-menu button:disabled {
+    opacity: 0.5;
+}
+.selection-boxplot-overlay {
+    position: fixed;
+    z-index: 21000;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.55);
+}
+.selection-boxplot-panel {
+    box-sizing: border-box;
+    width: min(1100px, 96vw);
+    max-height: 92vh;
+    overflow: auto;
+    padding: 16px;
+    color: var(--vscode-editor-foreground);
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-widget-border, var(--vscode-contrastBorder));
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+.selection-boxplot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.selection-boxplot-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+.selection-boxplot-header button {
+    padding: 5px 14px;
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 0;
+}
+.selection-boxplot-svg {
+    display: block;
+    width: 100%;
+    max-height: 58vh;
+}
+.boxplot-grid-line {
+    stroke: var(--vscode-tree-indentGuidesStroke);
+    stroke-width: 1;
+}
+.boxplot-axis-label,
+.boxplot-series-label {
+    fill: var(--vscode-editor-foreground);
+    font: 12px var(--vscode-font-family);
+}
+.boxplot-whisker {
+    stroke: var(--vscode-charts-foreground, var(--vscode-editor-foreground));
+    stroke-width: 2;
+}
+.boxplot-box {
+    fill: var(--vscode-charts-blue, var(--vscode-button-background));
+    fill-opacity: 0.4;
+    stroke: var(--vscode-charts-blue, var(--vscode-focusBorder));
+    stroke-width: 2;
+}
+.boxplot-median {
+    stroke: var(--vscode-charts-red, #d13438);
+    stroke-width: 3;
+}
+.boxplot-outlier {
+    fill: var(--vscode-charts-orange, #d18616);
+    stroke: var(--vscode-editor-background);
+    stroke-width: 1;
+}
+.selection-boxplot-details {
+    display: grid;
+    gap: 4px;
+    padding: 8px 12px;
+    font-variant-numeric: tabular-nums;
+    background: var(--vscode-textBlockQuote-background, var(--vscode-sideBar-background));
+}
 .wj-flexsheet .wj-tabholder {
     background-color: var(--vscode-sideBar-background);
 }
