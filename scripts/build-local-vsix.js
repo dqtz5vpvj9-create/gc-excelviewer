@@ -7,9 +7,11 @@ const os = require("os");
 const path = require("path");
 
 const repoRoot = path.resolve(__dirname, "..");
-const outputPath = path.resolve(
-    process.argv[2] || path.join(repoRoot, "gc-excelviewer-4.2.67-selection-statistics.vsix")
-);
+const repoManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+const outputPath = path.resolve(process.argv[2] || path.join(
+    repoRoot,
+    `gc-excelviewer-${repoManifest.version}-selection-statistics.vsix`
+));
 const installedRoot = path.join(os.homedir(), ".vscode-server", "extensions");
 
 function findPublishedBase() {
@@ -53,7 +55,7 @@ const stage = fs.mkdtempSync(path.join(os.tmpdir(), "gc-excelviewer-selection-st
 try {
     fs.cpSync(base, stage, { recursive: true });
 
-    const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+    const manifest = JSON.parse(JSON.stringify(repoManifest));
     delete manifest.scripts["vscode:prepublish"];
     fs.writeFileSync(path.join(stage, "package.json"), JSON.stringify(manifest, null, 4) + "\n");
 

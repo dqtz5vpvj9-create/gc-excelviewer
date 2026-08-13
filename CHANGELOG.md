@@ -1,5 +1,9 @@
 # Change Log
 
+## 4.2.68 (August 13, 2026)
+
+Added the sample standard deviation (equivalent to Excel `STDEV.S`) to the automatic selection statistics.
+
 ## 4.2.67 (August 13, 2026)
 
 Added Excel-like automatic statistics for the current CSV or XLSX selection: average, non-empty count, numeric count, minimum, maximum, and sum.

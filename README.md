@@ -6,7 +6,7 @@
 
 Powered by [Wijmo](https://developer.mescius.com/wijmo), this extension provides custom editors and previews for CSV files and XLSX spreadsheets in Visual Studio Code and [Visual Studio Code for the Web](https://code.visualstudio.com/docs/editor/vscode-web).
 
-> This fork adds an Excel-like status bar that automatically shows the average, non-empty count, numeric count, minimum, maximum, and sum for the current selection in both CSV and XLSX views.
+> This fork adds an Excel-like status bar that automatically shows the average, non-empty count, numeric count, sample standard deviation (Excel `STDEV.S`), minimum, maximum, and sum for the current selection in both CSV and XLSX views.
 
 The public source repository contains the same placeholder Wijmo key as upstream. To create a local VSIX without a Wijmo evaluation banner, first install the official Marketplace extension and then run `npm run package:local`. The packaging script uses the already-installed official extension as its base and overlays the selection-statistics code; it never prints or commits the embedded release license information.
 

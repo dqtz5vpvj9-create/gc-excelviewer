@@ -251,6 +251,7 @@ export default class CsvDocumentView extends BaseDocumentView {
                     <span class="numeric-stat">平均值: <span class="stat-value" data-stat-value="average">—</span></span>
                     <span>计数: <span class="stat-value" data-stat-value="count">0</span></span>
                     <span class="numeric-stat">数值计数: <span class="stat-value" data-stat-value="numericCount">0</span></span>
+                    <span class="numeric-stat">标准差: <span class="stat-value" data-stat-value="standardDeviation">—</span></span>
                     <span class="numeric-stat">最小值: <span class="stat-value" data-stat-value="min">—</span></span>
                     <span class="numeric-stat">最大值: <span class="stat-value" data-stat-value="max">—</span></span>
                     <span class="numeric-stat">求和: <span class="stat-value" data-stat-value="sum">—</span></span>

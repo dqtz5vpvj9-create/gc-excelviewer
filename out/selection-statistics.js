@@ -50,6 +50,8 @@
         var compensation = 0;
         var min = null;
         var max = null;
+        var runningMean = 0;
+        var squaredDeviationSum = 0;
 
         values.forEach(function (value) {
             if (!isNonEmpty(value)) {
@@ -61,6 +63,9 @@
             }
 
             numericCount++;
+            var delta = value - runningMean;
+            runningMean += delta / numericCount;
+            squaredDeviationSum += delta * (value - runningMean);
             var adjusted = value - compensation;
             var next = sum + adjusted;
             compensation = (next - sum) - adjusted;
@@ -77,6 +82,9 @@
             numericCount: numericCount,
             sum: numericCount ? sum : null,
             average: numericCount ? sum / numericCount : null,
+            standardDeviation: numericCount > 1
+                ? Math.sqrt(Math.max(0, squaredDeviationSum) / (numericCount - 1))
+                : null,
             min: min,
             max: max
         };
@@ -128,6 +136,7 @@
             average: formatNumber(stats.average),
             count: String(stats.count),
             numericCount: String(stats.numericCount),
+            standardDeviation: formatNumber(stats.standardDeviation),
             min: formatNumber(stats.min),
             max: formatNumber(stats.max),
             sum: formatNumber(stats.sum)
@@ -173,6 +182,7 @@
             '<span class="numeric-stat">平均值: <span class="stat-value" data-stat-value="average">—</span></span>' +
             '<span>计数: <span class="stat-value" data-stat-value="count">0</span></span>' +
             '<span class="numeric-stat">数值计数: <span class="stat-value" data-stat-value="numericCount">0</span></span>' +
+            '<span class="numeric-stat">标准差: <span class="stat-value" data-stat-value="standardDeviation">—</span></span>' +
             '<span class="numeric-stat">最小值: <span class="stat-value" data-stat-value="min">—</span></span>' +
             '<span class="numeric-stat">最大值: <span class="stat-value" data-stat-value="max">—</span></span>' +
             '<span class="numeric-stat">求和: <span class="stat-value" data-stat-value="sum">—</span></span>';

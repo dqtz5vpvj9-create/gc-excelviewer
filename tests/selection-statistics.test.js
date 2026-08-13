@@ -23,6 +23,7 @@ test("matches Excel count versus numeric aggregation semantics", () => {
     assert.strictEqual(result.numericCount, 14);
     assert.strictEqual(result.sum, 2722.16);
     assert.strictEqual(result.average, 194.44);
+    assert.ok(Math.abs(result.standardDeviation - 45.12661094503569) < 1e-12);
     assert.strictEqual(result.min, 133.68);
     assert.strictEqual(result.max, 301.49);
 });
@@ -34,6 +35,7 @@ test("ignores blanks, dates, booleans, NaN, and infinity for numeric metrics", (
         numericCount: 2,
         sum: 3,
         average: 1.5,
+        standardDeviation: Math.sqrt(24.5),
         min: -2,
         max: 5
     });
@@ -56,6 +58,7 @@ test("deduplicates overlapping selection ranges", () => {
         numericCount: 3,
         sum: 8,
         average: 8 / 3,
+        standardDeviation: Math.sqrt(7 / 3),
         min: 1,
         max: 4
     });
@@ -65,5 +68,12 @@ test("uses stable summation for common decimal values", () => {
     const result = stats.calculate([0.1, 0.2, 0.3]);
     assert.strictEqual(result.sum, 0.6);
     assert.ok(Math.abs(result.average - 0.2) < 1e-15);
+    assert.ok(Math.abs(result.standardDeviation - 0.1) < 1e-15);
     assert.strictEqual(stats.formatNumber(result.average), "0.2");
+});
+
+test("shows no sample standard deviation for a single numeric cell", () => {
+    const result = stats.calculate([42]);
+    assert.strictEqual(result.standardDeviation, null);
+    assert.strictEqual(stats.formatNumber(result.standardDeviation), "—");
 });
