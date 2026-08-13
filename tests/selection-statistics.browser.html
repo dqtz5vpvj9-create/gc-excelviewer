@@ -15,6 +15,18 @@
     <script src="../out/controls/wijmo.grid.sheet.min.js"></script>
     <script src="../out/selection-statistics.js"></script>
     <script>
+        Object.defineProperty(navigator, "clipboard", {
+            configurable: true,
+            value: {
+                writeText: function (value) {
+                    document.body.setAttribute("data-clipboard-write", value);
+                    return Promise.resolve();
+                },
+                readText: function () {
+                    return Promise.resolve("1\t2");
+                }
+            }
+        });
         var flex = new wijmo.grid.FlexGrid("#flex", {
             allowSorting: wijmo.grid.AllowSorting.None,
             itemsSource: [
@@ -123,6 +135,9 @@
                     deleteRow: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='delete-rows']")),
                     insertColumn: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='insert-columns']")),
                     deleteColumn: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[wj-part='delete-columns']")),
+                    cut: nativeCellMenu && nativeCellMenu.textContent.indexOf("剪切") >= 0,
+                    copy: nativeCellMenu && nativeCellMenu.textContent.indexOf("复制") >= 0,
+                    paste: nativeCellMenu && nativeCellMenu.textContent.indexOf("粘贴") >= 0,
                     boxPlot: Boolean(nativeCellMenu && nativeCellMenu.querySelector("[data-selection-boxplot]"))
                 }));
                 var nativeBoxPlotItem = nativeCellMenu && nativeCellMenu.querySelector("[data-selection-boxplot]");
@@ -146,7 +161,29 @@
                     clientX: cellRect.left + cellRect.width / 2,
                     clientY: cellRect.top + cellRect.height / 2
                 }));
-                var boxPlotButton = document.querySelector(".selection-statistics-context-menu button");
+                var menuButtons = Array.prototype.slice.call(
+                    document.querySelectorAll(".selection-statistics-context-menu button")
+                );
+                document.body.setAttribute("data-context-menu-items", JSON.stringify(
+                    menuButtons.map(function (item) { return item.textContent; })
+                ));
+                var copyButton = menuButtons.find(function (item) {
+                    return item.textContent === "复制";
+                });
+                if (copyButton) {
+                    copyButton.click();
+                }
+                cell.dispatchEvent(new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    button: 2,
+                    clientX: cellRect.left + cellRect.width / 2,
+                    clientY: cellRect.top + cellRect.height / 2
+                }));
+                var boxPlotButton = Array.prototype.slice.call(
+                    document.querySelectorAll(".selection-statistics-context-menu button")
+                ).find(function (item) {
+                    return item.textContent === "箱线图";
+                });
                 document.body.setAttribute(
                     "data-boxplot-menu",
                     boxPlotButton ? boxPlotButton.textContent : ""

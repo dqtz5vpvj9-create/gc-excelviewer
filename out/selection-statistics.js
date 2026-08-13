@@ -484,6 +484,96 @@
         return true;
     }
 
+    function fallbackClipboardCopy(text) {
+        if (typeof wijmo !== "undefined" && wijmo.Clipboard && wijmo.Clipboard.copy) {
+            wijmo.Clipboard.copy(text);
+            return true;
+        }
+        return false;
+    }
+
+    function copySelection(grid) {
+        var text = grid.getClipString();
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+            return navigator.clipboard.writeText(text).catch(function () {
+                fallbackClipboardCopy(text);
+            });
+        }
+        fallbackClipboardCopy(text);
+        return Promise.resolve();
+    }
+
+    function clearSelection(grid) {
+        if (grid.isReadOnly) {
+            return;
+        }
+        var visited = Object.create(null);
+        var clear = function () {
+            selectedRanges(grid).forEach(function (range) {
+                for (var row = Math.max(0, range.topRow); row <= Math.min(grid.rows.length - 1, range.bottomRow); row++) {
+                    for (var col = Math.max(0, range.leftCol); col <= Math.min(grid.columns.length - 1, range.rightCol); col++) {
+                        var key = row + ":" + col;
+                        if (!visited[key]) {
+                            visited[key] = true;
+                            grid.setCellData(row, col, null);
+                        }
+                    }
+                }
+            });
+        };
+        if (typeof grid.deferUpdate === "function") {
+            grid.deferUpdate(clear);
+        } else {
+            clear();
+        }
+    }
+
+    function cutSelection(grid) {
+        if (grid.isReadOnly) {
+            return Promise.resolve();
+        }
+        return copySelection(grid).then(function () {
+            clearSelection(grid);
+        });
+    }
+
+    function pasteSelection(grid) {
+        if (grid.isReadOnly) {
+            return Promise.resolve();
+        }
+        if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+            return navigator.clipboard.readText().then(function (text) {
+                grid.setClipString(text);
+            }).catch(function () {
+                if (typeof wijmo !== "undefined" && wijmo.Clipboard && wijmo.Clipboard.paste) {
+                    wijmo.Clipboard.paste(function (text) {
+                        grid.setClipString(text);
+                    });
+                }
+            });
+        }
+        if (typeof wijmo !== "undefined" && wijmo.Clipboard && wijmo.Clipboard.paste) {
+            wijmo.Clipboard.paste(function (text) {
+                grid.setClipString(text);
+            });
+        }
+        return Promise.resolve();
+    }
+
+    function nativeMenuItem(label, action, disabled) {
+        var item = document.createElement("div");
+        item.className = "wj-context-menu-item" + (disabled ? " wj-state-disabled" : "");
+        item.textContent = label;
+        if (!disabled) {
+            item.addEventListener("click", function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                action();
+            });
+        }
+        return item;
+    }
+
     function installContextMenu(grid) {
         if (grid.hostElement.__selectionStatisticsContextMenu) {
             return;
@@ -501,6 +591,20 @@
             if (!menu || menu.querySelector("[data-selection-boxplot]")) {
                 return;
             }
+            var clipboardSeparator = document.createElement("div");
+            clipboardSeparator.className = "wj-state-disabled selection-boxplot-menu-separator";
+            clipboardSeparator.style.width = "100%";
+            clipboardSeparator.style.height = "1px";
+            menu.appendChild(clipboardSeparator);
+            menu.appendChild(nativeMenuItem("剪切", function () {
+                cutSelection(grid);
+            }, grid.isReadOnly));
+            menu.appendChild(nativeMenuItem("复制", function () {
+                copySelection(grid);
+            }, false));
+            menu.appendChild(nativeMenuItem("粘贴", function () {
+                pasteSelection(grid);
+            }, grid.isReadOnly));
             var separator = document.createElement("div");
             separator.className = "wj-state-disabled selection-boxplot-menu-separator";
             separator.style.width = "100%";
@@ -547,6 +651,25 @@
             var menu = document.createElement("div");
             menu.className = "selection-statistics-context-menu";
             menu.setAttribute("role", "menu");
+            [
+                { label: "剪切", action: function () { cutSelection(grid); }, disabled: grid.isReadOnly },
+                { label: "复制", action: function () { copySelection(grid); }, disabled: false },
+                { label: "粘贴", action: function () { pasteSelection(grid); }, disabled: grid.isReadOnly }
+            ].forEach(function (command) {
+                var commandButton = document.createElement("button");
+                commandButton.type = "button";
+                commandButton.textContent = command.label;
+                commandButton.setAttribute("role", "menuitem");
+                commandButton.disabled = command.disabled;
+                commandButton.addEventListener("click", function () {
+                    closeMenu();
+                    command.action();
+                });
+                menu.appendChild(commandButton);
+            });
+            var separator = document.createElement("div");
+            separator.className = "selection-statistics-context-menu-separator";
+            menu.appendChild(separator);
             var button = document.createElement("button");
             button.type = "button";
             button.textContent = "箱线图";
@@ -683,6 +806,9 @@
         calculate: calculate,
         calculateGridSelection: calculateGridSelection,
         selectionContains: selectionContains,
+        copySelection: copySelection,
+        cutSelection: cutSelection,
+        pasteSelection: pasteSelection,
         boxPlotSummary: boxPlotSummary,
         selectionSeries: selectionSeries,
         showBoxPlot: showBoxPlot,

@@ -176,6 +176,11 @@ div[role=gridcell] {
 .selection-statistics-context-menu button:disabled {
     opacity: 0.5;
 }
+.selection-statistics-context-menu-separator,
+.selection-boxplot-menu-separator {
+    margin: 4px 0;
+    background: var(--vscode-menu-separatorBackground, var(--vscode-menu-border));
+}
 .selection-boxplot-overlay {
     position: fixed;
     z-index: 21000;

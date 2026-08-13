@@ -1,5 +1,10 @@
 # Change Log
 
+## 4.2.72
+
+- Restore Cut, Copy, and Paste commands in both CSV and XLSX context menus.
+- Add browser clipboard and Wijmo clipboard fallbacks for the restored commands.
+
 ## 4.2.71
 
 - Support Ctrl/Cmd-click selection of non-adjacent columns while keeping Shift-click ranges.
