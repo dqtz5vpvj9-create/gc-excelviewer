@@ -10,6 +10,10 @@ Added a Box Plot command for selected numeric data, including quartiles, median,
 
 Added Ctrl/Cmd-click selection of non-adjacent columns while preserving Shift-click ranges and existing FlexSheet context-menu commands.
 
+Added Cut, Copy, and Paste commands to the CSV context menu and restored them alongside the native FlexSheet commands.
+
+Changed Copy and Ctrl/Cmd+C to write both tab-separated text and an HTML table to the clipboard. Spreadsheet applications can paste the rich table directly, and copying complete columns includes their headers.
+
 ## 4.2.66 (June 4, 2026)
 Updated README with new content and updated plugin name.
 

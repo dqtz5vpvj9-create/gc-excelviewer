@@ -12,6 +12,8 @@ In CSV views, clicking a column header selects the complete column. Shift-click 
 
 After selecting numeric cells, right-click the selection and choose **Box Plot**. Each selected column is rendered as a separate Tukey box plot.
 
+The context menu provides Cut, Copy, and Paste commands. Copy and Ctrl/Cmd+C place both tab-separated text and an HTML table on the clipboard, so spreadsheet applications can paste a structured table. Copying complete columns includes their headers.
+
 > **Version 4.2.58 fixes many CSV editing issues that occurred in files containing multiline cells.**
 
 Version 4.2 now supports first-class **custom editors** that implement operations such as save, undo, redo, and hot exit. For XLSX files, this is the default, and clicking the name of an XLSX file in explorer view opens the custom editor directly. For CSV files, this is optional, and executing the `Open With` command on the context menu prompts for the built-in or custom editor to be opened. The `Open Preview` command is still supported for both file types.

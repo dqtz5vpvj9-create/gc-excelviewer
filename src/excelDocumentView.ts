@@ -87,6 +87,7 @@ export default class ExcelDocumentView extends BaseDocumentView {
         <script src="${this.scriptUri}/controls/wijmo.grid.xlsx.min.js" type="text/javascript"></script>
         <script src="${this.scriptUri}/controls/wijmo.xlsx.min.js" type="text/javascript"></script>
         <script src="${this.scriptUri}/jszip.min.js"></script>
+        <script src="${this.scriptUri}/xlsx.full.min.js"></script>
         <script src="${this.scriptUri}/selection-statistics.js"></script>
         <script src="${this.scriptUri}/excel.js"></script>
         <body style="padding:0px; overflow:hidden" onload="resizeSheet()" onresize="resizeSheet()">

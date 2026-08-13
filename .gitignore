@@ -4,3 +4,4 @@ dist
 *.vsix
 team-extension.log
 .vscode-test-web
+out/xlsx.full.min.js
